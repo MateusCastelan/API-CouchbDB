@@ -1,0 +1,45 @@
+// Post de um valor especifico
+###
+POST http://localhost:3000/api/pessoa 
+Content-Type: application/json
+
+{
+    "nome": "Mateus Pereira",
+    "dataNascimento": "1996-09-07",
+    "profissao": "estudante",
+    "cor": "Branca",
+    "estado": "Santa Catarina",
+    "cidade": "Criciúma"
+}
+
+// Post de varios valores aleatorios
+###
+POST http://localhost:3000/api/pessoa/insertRandom
+
+// Get de todos os dados
+###
+GET http://localhost:3000/api/pessoa
+
+// Get de um item especifico, passar o id
+###
+GET http://localhost:3000/api/pessoa/6521b973899b6f9696243e24
+
+
+// Put de um item especifico, passar o id
+###
+PUT http://localhost:3000/api/pessoa/6521b973899b6f9696243e24
+Content-Type: application/json
+
+{
+    "nome": "Kang Seulgi",
+    "dataNascimento": "1994-02-10",
+    "profissao": "Kpop Idol",
+    "cor": "Amarela",
+    "estado": "Seul",
+    "cidade": "Seul"
+}
+
+
+// Delete de um item especifico, passar o id
+###
+DELETE http://localhost:3000/api/pessoa/6521b973899b6f9696243e24
