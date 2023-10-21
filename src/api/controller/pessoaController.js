@@ -100,59 +100,63 @@ const pessoaController = {
     }
   },
 
-  updateManyRandom: async(req, res) => {
-    try {
-      const quantidade = 1000;
-      const query = { selector: { _id: { $exists: true } } };
-      const result = await db.find(query);
-
-      if (result.docs && result.docs.length > 0) {
-          const updatePromises = [];
-
-          for (let i = 0; i < quantidade; i++) {
-              const randomIndex = Math.floor(Math.random() * result.docs.length);
-              const randomPerson = result.docs[randomIndex];
-
-              try {
-                  // Verificar a existência do documento antes de atualizá-lo
-                  await db.get(randomPerson._id);
-
-                  // Gere valores aleatórios usando o Faker para os campos que deseja atualizar
-                  const update = {
-                      nome: faker.name.findName(),
-                      dataNascimento: faker.date.past(),
-                      profissao: faker.name.jobTitle(),
-                      cor: faker.random.arrayElement(['Branco', 'Negro', 'Pardo', 'Amarelo', 'Indígena']),
-                      estado: faker.address.state(),
-                      cidade: faker.address.city(),
-                  };
-
-                  // Use db.atomic para aplicar a atualização de forma eficiente
-                  await db.atomic('update', 'update', randomPerson._id, { updates: update });
-
-                  updatePromises.push(randomPerson._id);
-                  
-              } catch (error) {
-                  if (error.statusCode === 404) {
-                      // O documento não existe, faça o tratamento apropriado
-                      console.error('Documento não encontrado:', error);
-                  } else {
-                      console.error('Erro ao obter documento:', error);
-                  }
-              }
-          }
-
-          res.json({ message: `${quantidade} pessoas atualizadas no CouchDB` });
-      } else {
-          res.json({ message: 'Nenhum documento encontrado para atualizar' });
+  updateManyRandom: async (req, res) => {
+    db.list({ include_docs: true }, async (err, body) => {
+      if (err) {
+        console.log('Erro ao buscar documentos:', err);
+        res.status(500).send('Erro ao buscar documentos.');
+        return;
       }
-  } catch (error) {
-      console.error('Erro ao atualizar pessoas no CouchDB:', error);
-      res.status(500).json({ error: 'Erro ao atualizar pessoas no CouchDB' });
-  }
-},
+  
+      const documentos = body.rows.map(row => {
+        const doc = row.doc;
+        return {
+          ...doc,
+          nome: faker.name.findName(),
+          dataNascimento: faker.date.past(),
+          profissao: faker.name.jobTitle(),
+          cor: faker.random.arrayElement(['Branco', 'Negro', 'Pardo', 'Amarelo', 'Indígena']),
+          estado: faker.address.state(),
+          cidade: faker.address.city(),
+        };
+      });
+  
+      const quantidade = 1000;
+      const availableIndices = Array.from({ length: documentos.length }, (_, i) => i);
+  
+      for (let i = 0; i < quantidade && availableIndices.length > 0; i++) {
+        const randomIndex = Math.floor(Math.random() * availableIndices.length);
+        const selectedIndex = availableIndices.splice(randomIndex, 1)[0];
+        const doc = documentos[selectedIndex];
+  
+        try {
+          // Obtenha a revisão do documento existente
+          const existingDocument = await db.get(doc._id);
+          const update = {
+            _id: doc._id,
+            _rev: existingDocument._rev, // Inclua a revisão correta
+            nome: doc.nome,
+            dataNascimento: doc.dataNascimento,
+            profissao: doc.profissao,
+            cor: doc.cor,
+            estado: doc.estado,
+            cidade: doc.cidade,
+          };
+  
+          // Use db.insert para atualizar o documento
+          await db.insert(update);
+          console.log(`Documento com ID ${doc._id} atualizado.`);
+        } catch (error) {
+          console.log(`Erro ao atualizar o documento com ID ${doc._id}:`, error);
+        }
+      }
+  
+      res.status(200).send('Documentos atualizados com sucesso.');
+    });
+  },
   
 
+  
 
   delete: async (req, res) => {
     const id = req.params.id;
