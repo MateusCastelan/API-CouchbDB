@@ -100,6 +100,60 @@ const pessoaController = {
     }
   },
 
+  updateManyRandom: async(req, res) => {
+    try {
+      const quantidade = 1000;
+      const query = { selector: { _id: { $exists: true } } };
+      const result = await db.find(query);
+
+      if (result.docs && result.docs.length > 0) {
+          const updatePromises = [];
+
+          for (let i = 0; i < quantidade; i++) {
+              const randomIndex = Math.floor(Math.random() * result.docs.length);
+              const randomPerson = result.docs[randomIndex];
+
+              try {
+                  // Verificar a existência do documento antes de atualizá-lo
+                  await db.get(randomPerson._id);
+
+                  // Gere valores aleatórios usando o Faker para os campos que deseja atualizar
+                  const update = {
+                      nome: faker.name.findName(),
+                      dataNascimento: faker.date.past(),
+                      profissao: faker.name.jobTitle(),
+                      cor: faker.random.arrayElement(['Branco', 'Negro', 'Pardo', 'Amarelo', 'Indígena']),
+                      estado: faker.address.state(),
+                      cidade: faker.address.city(),
+                  };
+
+                  // Use db.atomic para aplicar a atualização de forma eficiente
+                  await db.atomic('update', 'update', randomPerson._id, { updates: update });
+
+                  updatePromises.push(randomPerson._id);
+                  
+              } catch (error) {
+                  if (error.statusCode === 404) {
+                      // O documento não existe, faça o tratamento apropriado
+                      console.error('Documento não encontrado:', error);
+                  } else {
+                      console.error('Erro ao obter documento:', error);
+                  }
+              }
+          }
+
+          res.json({ message: `${quantidade} pessoas atualizadas no CouchDB` });
+      } else {
+          res.json({ message: 'Nenhum documento encontrado para atualizar' });
+      }
+  } catch (error) {
+      console.error('Erro ao atualizar pessoas no CouchDB:', error);
+      res.status(500).json({ error: 'Erro ao atualizar pessoas no CouchDB' });
+  }
+},
+  
+
+
   delete: async (req, res) => {
     const id = req.params.id;
     try {
@@ -113,7 +167,26 @@ const pessoaController = {
       console.error('Erro ao excluir pessoa por ID:', error);
       res.status(500).json({ error: 'Erro ao excluir pessoa por ID' });
     }
+  },
+
+
+
+  deleteAllData: async (req, res) => {
+    try {
+        // Exclua o banco de dados existente
+      await nano.db.destroy(dbName);
+
+      // Crie um novo banco de dados com o mesmo nome
+      await nano.db.create(dbName);
+
+      res.json({ message: 'Todos os dados excluídos do CouchDB' });
+    } catch (error) {
+      console.error('Erro ao excluir dados do CouchDB:', error);
+      res.status(500).json({ error: 'Erro ao excluir dados do CouchDB' });
+    }
   }
 };
 
 module.exports = pessoaController;
+
+

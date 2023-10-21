@@ -39,7 +39,15 @@ Content-Type: application/json
     "cidade": "Seul"
 }
 
+// Update de varios valores aleatorios
+###
+POST http://localhost:3000/api/pessoa/updateRandom
+
 
 // Delete de um item especifico, passar o id
 ###
-DELETE http://localhost:3000/api/pessoa/6521b973899b6f9696243e24
+DELETE http://localhost:3000/api/pessoa/2c689a1c36b0e59d0b1c5a382d1f46a3
+
+// Delete de todos os itens do banco de dados
+###
+DELETE http://localhost:3000/api/pessoa/deleteAllData
